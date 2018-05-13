@@ -2,6 +2,7 @@ package gommap_test
 
 import (
 	"github.com/tfg13/gommap"
+	"golang.org/x/sys/unix"
 	"io/ioutil"
 	. "launchpad.net/gocheck"
 	"os"
@@ -54,6 +55,30 @@ func (s *S) TestReadWrite(c *C) {
 	fileData, err := ioutil.ReadFile(s.file.Name())
 	c.Assert(err, IsNil)
 	c.Assert(fileData, DeepEquals, []byte("012345678XABCDEF"))
+}
+
+func (s *S) TestReMap(c *C) {
+	mmap, err := gommap.Map(s.file.Fd(), gommap.PROT_READ|gommap.PROT_WRITE, gommap.MAP_SHARED)
+	c.Assert(err, IsNil)
+	defer mmap.UnsafeUnmap()
+	c.Assert([]byte(mmap), DeepEquals, testData)
+
+	err = mmap.ReMap(int64(len(testData) * 2))
+	c.Assert(err, IsNil)
+	c.Assert(len(mmap), Equals, len(testData)*2)
+	c.Assert(cap(mmap), Equals, len(testData)*2)
+
+	// mmapping a bigger memory area than the file size does not
+	// change the file size, this has to be done manually
+	err = unix.Ftruncate(int(s.file.Fd()), int64(len(testData)*2))
+	c.Assert(err, IsNil)
+
+	copy(mmap[len(testData):len(testData)*2], testData)
+	mmap.Sync(gommap.MS_SYNC)
+
+	fileData, err := ioutil.ReadFile(s.file.Name())
+	c.Assert(err, IsNil)
+	c.Assert(fileData, DeepEquals, []byte("0123456789ABCDEF0123456789ABCDEF"))
 }
 
 func (s *S) TestSliceMethods(c *C) {

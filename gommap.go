@@ -69,6 +69,20 @@ func MapAt(addr uintptr, fd uintptr, offset, length int64, prot ProtFlags, flags
 	return mmap, nil
 }
 
+// ReMap expands (or shrinks) an existing memory mapping
+func (mmap *MMap) ReMap(length int64) error {
+	rh := (*reflect.SliceHeader)(unsafe.Pointer(mmap))
+	_, _, err := unix.Syscall6(unix.SYS_MREMAP, uintptr(rh.Data), uintptr(rh.Len),
+		uintptr(length), 0, 0, 0)
+	if err != 0 {
+		return err
+	}
+	// was successful, update mapping size
+	rh.Len = int(length)
+	rh.Cap = rh.Len
+	return nil
+}
+
 // UnsafeUnmap deletes the memory mapped region defined by the mmap slice. This
 // will also flush any remaining changes, if necessary.  Using mmap or any
 // other slices based on it after this method has been called will crash the
