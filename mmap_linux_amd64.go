@@ -1,8 +1,8 @@
 package gommap
 
-import "syscall"
+import "golang.org/x/sys/unix"
 
 func mmap_syscall(addr, length, prot, flags, fd uintptr, offset int64) (uintptr, error) {
-	addr, _, err := syscall.Syscall6(syscall.SYS_MMAP, addr, length, prot, flags, fd, uintptr(offset))
+	addr, _, err := unix.Syscall6(unix.SYS_MMAP, addr, length, prot, flags, fd, uintptr(offset))
 	return addr, err
 }
