@@ -1,7 +1,7 @@
 package gommap_test
 
 import (
-	"github.com/tysontate/gommap"
+	"github.com/tfg13/gommap"
 	"io/ioutil"
 	. "launchpad.net/gocheck"
 	"os"
